@@ -22,5 +22,8 @@ jobs:
       - name: Instalar opencode
         run: npm install -g opencode-ai
 
+      - name: Crear rama local main para diff
+        run: git fetch origin main:main
+
       - name: Ejecutar revisión de código
         run: gga run --pr-mode
