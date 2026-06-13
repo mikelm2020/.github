@@ -1,0 +1,45 @@
+name: CI Python (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Versión de Python"
+        required: false
+        type: string
+        default: "3.11"
+      requirements_file:
+        description: "Archivo de dependencias de test"
+        required: false
+        type: string
+        default: "requirements-dev.txt"
+      test_command:
+        description: "Comando para ejecutar los tests"
+        required: false
+        type: string
+        default: "pytest tests/ -v"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python ${{ inputs.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles(inputs.requirements_file) }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Instalar dependencias de test
+        run: pip install -r ${{ inputs.requirements_file }}
+
+      - name: Ejecutar tests
+        run: ${{ inputs.test_command }}

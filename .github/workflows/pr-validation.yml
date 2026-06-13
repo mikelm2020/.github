@@ -1,0 +1,83 @@
+name: PR Validation (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      issues_repo:
+        description: "Repo donde viven los issues (ej: mikelm2020/nexosync-saas)"
+        required: true
+        type: string
+    secrets:
+      ISSUES_TOKEN:
+        description: "Token con acceso de lectura al issues_repo"
+        required: true
+
+jobs:
+  check-issue-reference:
+    name: Check Issue Reference
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar referencia a issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! echo "$PR_BODY" | grep -iEq '(closes|fixes|resolves) #[0-9]+'; then
+            echo "❌ El body del PR debe contener 'Closes #N', 'Fixes #N' o 'Resolves #N'"
+            exit 1
+          fi
+          echo "✅ Referencia a issue encontrada"
+
+  check-issue-approved:
+    name: Check Issue Has status:approved
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar que el issue tiene status:approved
+        env:
+          GH_TOKEN: ${{ secrets.ISSUES_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          ISSUES_REPO: ${{ inputs.issues_repo }}
+        run: |
+          ISSUE_NUMBER=$(echo "$PR_BODY" | grep -iEo '(closes|fixes|resolves) #[0-9]+' | grep -Eo '[0-9]+' | head -1)
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "❌ No se encontró número de issue en el body del PR"
+            exit 1
+          fi
+
+          echo "Verificando issue #$ISSUE_NUMBER en $ISSUES_REPO..."
+          LABELS=$(gh api "repos/$ISSUES_REPO/issues/$ISSUE_NUMBER" --jq '[.labels[].name] | join(",")')
+          echo "Labels del issue: $LABELS"
+
+          if ! echo "$LABELS" | grep -q "status:approved"; then
+            echo "❌ El issue #$ISSUE_NUMBER no tiene el label 'status:approved' en $ISSUES_REPO"
+            exit 1
+          fi
+
+          echo "✅ Issue #$ISSUE_NUMBER tiene status:approved"
+
+  check-pr-type-label:
+    name: Check PR Has type:* Label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar que el PR tiene exactamente un label type:*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          LABELS=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '[.labels[].name] | join(",")')
+          echo "Labels del PR: $LABELS"
+
+          TYPE_COUNT=$(echo "$LABELS" | tr ',' '\n' | grep -c '^type:' || true)
+
+          if [ "$TYPE_COUNT" -eq 0 ]; then
+            echo "❌ El PR no tiene label type:* — agrega uno: type:feature, type:bug, type:docs, type:refactor, type:chore, type:breaking-change"
+            exit 1
+          fi
+
+          if [ "$TYPE_COUNT" -gt 1 ]; then
+            echo "❌ El PR tiene $TYPE_COUNT labels type:* — debe tener exactamente uno"
+            exit 1
+          fi
+
+          echo "✅ PR tiene exactamente 1 label type:*"

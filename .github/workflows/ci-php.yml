@@ -1,0 +1,30 @@
+name: CI PHP (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      php_version:
+        description: "Versión de PHP"
+        required: false
+        type: string
+        default: "8.2"
+      test_command:
+        description: "Comando para ejecutar los tests"
+        required: false
+        type: string
+        default: "bash tests/integration.sh"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar PHP ${{ inputs.php_version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php_version }}
+          tools: none
+
+      - name: Ejecutar tests
+        run: ${{ inputs.test_command }}
