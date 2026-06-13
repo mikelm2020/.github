@@ -23,4 +23,4 @@ jobs:
         run: npm install -g opencode-ai
 
       - name: Ejecutar revisión de código
-        run: gga run --pr-mode --diff-only
+        run: gga run --pr-mode
