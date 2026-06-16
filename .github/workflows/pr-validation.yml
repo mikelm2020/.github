@@ -61,14 +61,11 @@ jobs:
     steps:
       - name: Verificar que el PR tiene exactamente un label type:*
         env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
+          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
-          LABELS=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '[.labels[].name] | join(",")')
-          echo "Labels del PR: $LABELS"
-
-          TYPE_COUNT=$(echo "$LABELS" | tr ',' '\n' | grep -c '^type:' || true)
+          TYPE_COUNT=$(echo "$PR_LABELS_JSON" | jq '[.[] | select(.name | startswith("type:"))] | length')
+          echo "Labels type:* encontrados: $TYPE_COUNT"
+          echo "$PR_LABELS_JSON" | jq -r '.[].name' | grep '^type:' || true
 
           if [ "$TYPE_COUNT" -eq 0 ]; then
             echo "❌ El PR no tiene label type:* — agrega uno: type:feature, type:bug, type:docs, type:refactor, type:chore, type:breaking-change"
