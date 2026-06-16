@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ISSUES_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ inputs.issues_repo }}
+          REPO: ${{ github.repository }}
         run: |
           LABELS=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '[.labels[].name] | join(",")')
           echo "Labels del PR: $LABELS"
