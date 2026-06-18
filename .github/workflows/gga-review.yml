@@ -26,4 +26,30 @@ jobs:
         run: git fetch origin main:main
 
       - name: Ejecutar revisión de código
-        run: gga run --pr-mode
+        id: gga
+        run: |
+          set +e
+          gga run --pr-mode 2>&1 | tee /tmp/gga-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          sed -i 's/\x1b\[[0-9;]*m//g' /tmp/gga-output.txt
+          exit $EXIT_CODE
+
+      - name: Publicar violaciones en el PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## 🤖 GGA — Revisión de código"
+            echo ""
+            echo "❌ Se encontraron violaciones que deben corregirse antes del merge."
+            echo ""
+            echo '```'
+            cat /tmp/gga-output.txt
+            echo '```'
+            echo ""
+            echo "> Corrige las violaciones anteriores y vuelve a hacer push."
+          } > /tmp/pr-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file /tmp/pr-comment.md
