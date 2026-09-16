@@ -1,55 +1,20 @@
 name: GGA — AI Code Review (reusable)
 
+# Desactivado org-wide (2026-09-15): GGA choca con el flujo de RDD
+# (gentle-ai review) — casos concretos donde ambos revisores exigen
+# comportamientos opuestos sobre el mismo diff (ej. "except Exception"
+# amplio deliberado vs. "nunca except Exception genérico"). El proyecto
+# gentle-ai ya no planea mantener la integración con GGA. Se deja este
+# job como no-op en vez de borrar el archivo para no romper los
+# workflows llamadores (`.github/workflows/ai-review.yml`) en los repos
+# satélite, que siguen invocándolo por nombre.
+
 on:
   workflow_call:
 
 jobs:
   review:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Instalar GGA
-        run: |
-          git clone https://github.com/Gentleman-Programming/gentleman-guardian-angel.git /tmp/gga
-          chmod +x /tmp/gga/bin/gga
-          echo "/tmp/gga/bin" >> $GITHUB_PATH
-
-      - name: Instalar opencode
-        run: npm install -g opencode-ai
-
-      - name: Crear rama local main para diff
-        run: git fetch origin main:main
-
-      - name: Ejecutar revisión de código
-        id: gga
-        run: |
-          set +e
-          gga run --pr-mode 2>&1 | tee /tmp/gga-output.txt
-          EXIT_CODE=${PIPESTATUS[0]}
-          sed -i 's/\x1b\[[0-9;]*m//g' /tmp/gga-output.txt
-          exit $EXIT_CODE
-
-      - name: Publicar violaciones en el PR
-        if: failure() && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          {
-            echo "## 🤖 GGA — Revisión de código"
-            echo ""
-            echo "❌ Se encontraron violaciones que deben corregirse antes del merge."
-            echo ""
-            echo '```'
-            cat /tmp/gga-output.txt
-            echo '```'
-            echo ""
-            echo "> Corrige las violaciones anteriores y vuelve a hacer push."
-          } > /tmp/pr-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --repo "${{ github.repository }}" \
-            --body-file /tmp/pr-comment.md
+      - name: GGA desactivado
+        run: echo "GGA está desactivado org-wide — ver comentario en este workflow."
