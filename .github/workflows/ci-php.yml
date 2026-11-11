@@ -22,7 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # En el runner propio (self-hosted) no se instala PHP: setup-php pediría sudo y se
+      # quedaría esperando. Se usa el PHP del sistema.
       - name: Configurar PHP ${{ inputs.php_version }}
+        if: runner.environment == 'github-hosted'
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ inputs.php_version }}
