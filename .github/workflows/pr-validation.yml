@@ -15,7 +15,7 @@ on:
 jobs:
   check-issue-reference:
     name: Check Issue Reference
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Verificar referencia a issue
         env:
@@ -29,7 +29,7 @@ jobs:
 
   check-issue-approved:
     name: Check Issue Has status:approved
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Verificar que el issue tiene status:approved
         env:
@@ -57,7 +57,7 @@ jobs:
 
   check-pr-type-label:
     name: Check PR Has type:* Label
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Verificar que el PR tiene exactamente un label type:*
         env:
